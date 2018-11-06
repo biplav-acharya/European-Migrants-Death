@@ -12,7 +12,7 @@ Link to the RStudio Notebook:  http://rpubs.com/biplav13/436971
 
 ![alt text](https://github.com/biplav13/My-files/blob/master/Plot5.png)
 
-![alt text](https://github.com/biplav13/My-files/blob/master/Plot%209.png)
+![alt text](https://github.com/biplav13/My-files/blob/master/Plot9.png)
 
 ![alt text](https://github.com/biplav13/My-files/blob/master/Plot6.png)
 
