@@ -1,10 +1,10 @@
 ---
 title: 'Project: European migrant death'
 output:
+  word_document: default
+  pdf_document: default
   html_document:
     df_print: paged
-  pdf_document: default
-  word_document: default
 ---
 Data source: https://raw.githubusercontent.com/ondata/the-list/master/data/refugeesAndMigrants.csv
 
@@ -410,15 +410,70 @@ ggplot(data =  year_vs_nature_of_death_sum_trimmed, aes(y=sum.number, x=reorder(
 
 There is a recent surge in death count in last five years for the deaths caused by suffocation, accident, shooting and murder.
 
-Analysis for the path of migration for the deaths caused by drowning or presumed drowning:
+Analysis for the EU migrant death for the deaths caused by drowning or presumed drowning:
+
+
+
 
 ```{r}
 #get the data for nature of death = Drown
 
 data_drown <- EU_migration_deaths[((EU_migration_deaths$`Nature of death`=="Drown") |
                                      (EU_migration_deaths$`Nature of death`=="Presumed drowned")),]
-
 library(plyr)
+
+#year by country of incident
+data_drown_byyearandcountryofinci <- ddply(data_drown,.(year,`country of incident`), summarize, sum.drown=sum(number))
+
+
+totalbyyear <- tapply(year_vs_coun_of_incident$sum.number,year_vs_coun_of_incident$year , sum)
+
+total.by.year <- data.frame(year = names(totalbyyear))
+
+for (i in 1:dim(total.by.year)[1]) {total.by.year$sum.total[i] <- totalbyyear[i]
+}
+
+data_drown_byyearandcountryofinci_sum <- merge(data_drown_byyearandcountryofinci, total.by.year, by= "year", all.x = T )
+
+data_drown_byyearandcountryofinci_sum$proportion <- data_drown_byyearandcountryofinci_sum$sum.drown/data_drown_byyearandcountryofinci_sum$sum.total
+
+
+propbycountry <- tapply(data_drown_byyearandcountryofinci_sum$proportion,data_drown_byyearandcountryofinci_sum$`country of incident` , sum)
+
+prop.by.country <- data.frame(country = names(propbycountry))
+
+colnames(prop.by.country)[1] <- "country of incident"
+
+
+for (i in 1:dim(prop.by.country)[1]) {prop.by.country$prop.tot.by.country[i] <- propbycountry[i]
+}
+
+data_drown_byyearandcountryofinci_sum <- merge(data_drown_byyearandcountryofinci_sum, prop.by.country, by= "country of incident", all.x = T )
+
+#if the total death for a country is less than n set the country to 'other'
+n <- 0.2
+
+for (i in 1:dim(data_drown_byyearandcountryofinci_sum)[1]) {
+  if (data_drown_byyearandcountryofinci_sum$prop.tot.by.country[i] < n){
+    data_drown_byyearandcountryofinci_sum$`country of incident`[i] <- "other"
+  }
+}
+
+
+ggplot(data =  data_drown_byyearandcountryofinci_sum, aes(y=proportion, x=year ,fill =`country of incident` )) +
+  geom_col() +
+  # coord_flip() +
+   labs(y = "Proportional of death casued by drowning", x = "Year of incident", title = "Proportion of EU migrant death caused by drowning each year \n sub-divided by 'country of incident' ") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), plot.title = element_text(hjust = 0.5))
+
+
+
+
+
+
+
+
+#year by path and year
 data_drown_by_pathandyear <- ddply(data_drown,.(year,Path), summarize, sum.number=sum(number))
 
 bypath <- tapply(data_drown_by_pathandyear$sum.number,data_drown_by_pathandyear$Path , sum)
@@ -429,6 +484,10 @@ for (i in 1:dim(by.path)[1]) {by.path$deathbypath[i] <- bypath[i]
 }
 
 data_drown_by_pathandyear_sum <- merge(data_drown_by_pathandyear, by.path, by= "Path", all.x = T )
+
+
+
+
 
 for (i in 1:dim(data_drown_by_pathandyear_sum)[1]) {
   if (data_drown_by_pathandyear_sum$year[i] %in% c(1993:1999)){
