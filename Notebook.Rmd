@@ -3,8 +3,8 @@ title: 'Project: European migrant death'
 output:
   html_document:
     df_print: paged
-  word_document: default
   pdf_document: default
+  word_document: default
 ---
 Data source: https://raw.githubusercontent.com/ondata/the-list/master/data/refugeesAndMigrants.csv
 
@@ -235,7 +235,7 @@ for (i in 1:dim(year_vs_coun_of_incident_sum_other)[1]) {
 ggplot(data =  year_vs_coun_of_incident_sum_other, aes(y=sum.number, x=year ,fill =`country of incident` )) +
   geom_col() + 
   # coord_flip() +
-   labs(y = "Death total", x = "Year of incident", title = "Death by year of incident ") +
+   labs(y = "Death total", x = "Year of incident", title = "EU migrant death by year of incident \n sub-divided by 'country of incident' ") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), plot.title = element_text(hjust = 0.5))
 
 unknown_coun_of_incident <- sum(EU_migration_deaths$number[
@@ -245,12 +245,12 @@ print(paste("The country of incident for", unknown_coun_of_incident,
             "deaths occured between 1993-2018 is unidentified."))
 
 #remove the data for unknown country of incident
-year_vs_coun_of_incident_sum_other <- year_vs_coun_of_incident_sum_other[(year_vs_coun_of_incident_sum_other$`country of incident` != "unknown"),]
-
-ggplot(data =  year_vs_coun_of_incident_sum_other, aes(y=sum.number, x=year ,fill =`country of incident` )) +
-  geom_col() +
-  # coord_flip() +
-   labs(y = "Death total", x = "Year of incident", title = "Death by year of incident \n (excluding 'unkown' country of incident)") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), plot.title = element_text(hjust = 0.5))
+# year_vs_coun_of_incident_sum_other <- year_vs_coun_of_incident_sum_other[(year_vs_coun_of_incident_sum_other$`country of incident` != "unknown"),]
+# 
+# ggplot(data =  year_vs_coun_of_incident_sum_other, aes(y=sum.number, x=year ,fill =`country of incident` )) +
+#   geom_col() +
+#   # coord_flip() +
+#    labs(y = "Death total", x = "Year of incident", title = "Death by year of incident \n (excluding 'unkown' country of incident)") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), plot.title = element_text(hjust = 0.5))
 
 ```
 
@@ -281,7 +281,7 @@ for (i in 1:dim(year_vs_coun_of_incident_sum_gt_n)[1]) {
 ggplot(data =  year_vs_coun_of_incident_sum_gt_n, aes(y=sum.number, x=reorder(`country of incident`,desc(deathbycoun)) ,fill =year )) +
   geom_col() + 
   # coord_flip() +
-   labs(y = "Death total", x = "Country of incident", title = "Death by country of incident \n(Top 20 excluding 'unkown')") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),plot.title = element_text(hjust = 0.5))
+   labs(y = "Death total", x = "Country of incident", title = "EU migrant death \n(Top 20 excluding 14763 unkown 'country of incident')") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),plot.title = element_text(hjust = 0.5))
 ```
 
 #Analysis by region of origin and year
@@ -297,6 +297,28 @@ for (i in 1:dim(region.of.origin)[1]) {region.of.origin$deathbycoun[i] <- region
 }
 colnames(region.of.origin)[1] <- "region of origin"
 year_vs_region_of_origin_sum <- merge(year_vs_region_of_origin, region.of.origin, by= "region of origin", all.x = T )
+
+
+#if the total death for a Region of origin is less than n set the region of origin to 'other'
+n <- 350
+year_vs_region_of_origin_sum_other <- year_vs_region_of_origin_sum
+for (i in 1:dim(year_vs_region_of_origin_sum_other)[1]) {
+  if (year_vs_region_of_origin_sum_other$deathbycoun[i] < n){
+    year_vs_region_of_origin_sum_other$`region of origin`[i] <- "other"
+  }
+}
+ggplot(data =  year_vs_region_of_origin_sum_other, aes(y=sum.number, x=year ,fill =`region of origin` )) +
+  geom_col() + 
+  # coord_flip() +
+   labs(y = "Death total", x = "Year of incident", title = "EU migrant death by year of incident \n sub-divided by 'region of origin' ") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), plot.title = element_text(hjust = 0.5))
+
+unknown_regionofinc <- sum(EU_migration_deaths$number[
+                                EU_migration_deaths$`region of origin` == "unknown"])
+
+print(paste("The 'Region of origin' for", unknown_regionofinc,
+            "deaths occured between 1993-2018 is unknown."))
+
 
 #Get the data for total death greater than n
 n <- 110
@@ -319,7 +341,7 @@ for (i in 1:dim(year_vs_region_of_origin_sum_gt_n)[1]) {
 ggplot(data =  year_vs_region_of_origin_sum_gt_n, aes(y=sum.number, x=reorder(`region of origin`, desc(deathbycoun)) ,fill =year )) +
   geom_col() + 
   # coord_flip() +
-   labs(y = "Death total", x = "Region of origin", title = "Death by region of origin \n (Top 20 excluding 'unkown')") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), plot.title = element_text(hjust = 0.5))
+   labs(y = "Death total", x = "Region of origin", title = "EU migrants death \n (Top 20 excluding 19773 unknown 'region of origin')") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), plot.title = element_text(hjust = 0.5))
 
 ```
 
