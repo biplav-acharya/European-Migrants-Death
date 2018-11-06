@@ -1,0 +1,458 @@
+---
+title: 'Project: European migrant death'
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+  pdf_document: default
+---
+Data source: https://raw.githubusercontent.com/ondata/the-list/master/data/refugeesAndMigrants.csv
+
+Project created by : Biplav Acharya
+
+Date created: 10/28/2018
+Last updated: 11/04/2018
+
+Load the reqired package
+
+```{r}
+library(readr)
+library(ggplot2)
+library(gridExtra)
+```
+
+import the data
+```{r}
+EU_migration_deaths <- read_csv("https://raw.githubusercontent.com/ondata/the-list/master/data/refugeesAndMigrants.csv")
+```
+
+#Data management:
+
+Compile the year of incident:
+```{r}
+EU_migration_deaths <- EU_migration_deaths[!is.na(nchar(EU_migration_deaths$`found dead`)),]
+EU_migration_deaths$year <- EU_migration_deaths$`found dead`
+for (i in 1:dim(EU_migration_deaths)[1]) {
+  l <- nchar(EU_migration_deaths$year[i])
+  if (l == 8) {
+    EU_migration_deaths$year[i] <- substr(EU_migration_deaths$year[i],7,8)
+  } else if (nchar(EU_migration_deaths$year[i]) == 6) {
+    EU_migration_deaths$year[i] <- substr(EU_migration_deaths$year[i],5,6)
+  }
+}
+for (i in 1:dim(EU_migration_deaths)[1]) {
+  l <- nchar(EU_migration_deaths$year[i])
+  if (l != 2) {
+    EU_migration_deaths$year[i] <- substr(EU_migration_deaths$year[i],l-1,l)
+  } 
+}
+EU_migration_deaths$year <- as.numeric(as.character(EU_migration_deaths$year))
+for (i in 1:dim(EU_migration_deaths)[1]) {
+  if (EU_migration_deaths$year[i] < 20){
+    EU_migration_deaths$year[i]<- EU_migration_deaths$year[i]+2000
+  } else if (EU_migration_deaths$year[i] > 20) {
+    EU_migration_deaths$year[i]<- EU_migration_deaths$year[i]+1900
+  }
+}
+EU_migration_deaths$year[i] <- as.character(EU_migration_deaths$year[i])
+
+```
+
+Compile the Region of origin
+```{r}
+
+for (i in 1:length(EU_migration_deaths$`region of origin`)) {
+  if (grepl(",",EU_migration_deaths$`region of origin`[i])|
+      grepl("or ",EU_migration_deaths$`region of origin`[i])){
+      EU_migration_deaths$`region of origin`[i] <- "unknown"
+      }
+}
+
+```
+
+Compile the path of migrant
+
+```{r}
+EU_migration_deaths$Path <- as.character(paste (EU_migration_deaths$`region of origin`, "to", EU_migration_deaths$`country of incident`))
+```
+
+Complile the cause of death 
+
+```{r}
+EU_migration_deaths$`Nature of death` <- "other"
+cof <- c(strsplit(EU_migration_deaths$`cause of death`, " "))
+
+for (i in 1:dim(EU_migration_deaths)[1]) {
+    if (grepl("presumed drowned",EU_migration_deaths$`cause of death`[i])) {
+      EU_migration_deaths$`Nature of death`[i] <- "Presumed drowned"
+      } else if (grepl("drown",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Drown"
+      } else if (grepl("bodies recovered",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Bodies Recovered"
+      } else if (grepl("mine",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Mine field"
+      } else if (grepl("suffoc",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Suffocation"
+      } else if (grepl("suicide",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Suicide"
+      } else if ((grepl("hunger",EU_migration_deaths$`cause of death`[i]))|
+                  (grepl("starvation",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("food",EU_migration_deaths$`cause of death`[i]))){
+        EU_migration_deaths$`Nature of death`[i] <- "Hunger"
+      } else if ((grepl("neglect",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("abandon",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("abandoned",EU_migration_deaths$`cause of death`[i]))){
+        EU_migration_deaths$`Nature of death`[i] <- "Abandoned"
+      }else if ((grepl("medical",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("hospital",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("cancer",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("cardio",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("heart",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("cancer",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("cardio",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("heart",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("hypothermia",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("stroke",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("wound",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("neumonia",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("pulmonary",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("tuberculosis",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("fever",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("ill",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("asphyxia",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("clinic",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("doctor",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("hypothermia",EU_migration_deaths$`cause of death`[i]))){
+        EU_migration_deaths$`Nature of death`[i] <- "Medical"
+      } else if (grepl("fire",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Fire"
+      } else if (grepl("burn",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Fire"
+      } else if (grepl("arson",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Arson"
+      } else if (grepl("dehydration",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Dehydration"
+      } else if (grepl("murder",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Murder"
+      } else if (grepl("shot",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Shot"
+      } else if (grepl("detention",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Detention"
+      } else if (grepl("found dead",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Found dead"
+      } else if (grepl("missing",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Missing"
+      } else if (grepl("found",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Found dead"
+      } else if (grepl("tortured",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Tortured"
+      } else if (grepl("fight",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Fight"
+      } else if (grepl("froze",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Frozen"
+      } else if (grepl("beaten",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Beaten"
+      } else if (grepl("raci",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Racial"
+      } else if (grepl("police",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Police"
+      } else if (grepl("stabbed",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Stabbed"
+      } else if (grepl("assylum",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Assylum"
+      } else if (grepl("deport",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Deportation"
+      } else if (grepl("prison",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Prison"
+      } else if (grepl("smuggler",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Smuggler"
+      } else if (grepl("presumed dead",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Presumed dead"
+      } else if (grepl("disappeared",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Presumed dead"
+      } else if (grepl("toxic",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Toxic"
+      } else if (grepl("exhaustion",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Exhaustion"
+      } else if (grepl("overcrowded",EU_migration_deaths$`cause of death`[i])) {
+        EU_migration_deaths$`Nature of death`[i] <- "Overcrowded"
+      } else if ((grepl("accident",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("car",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("train",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("truck",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("vehicle",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("run over",EU_migration_deaths$`cause of death`[i]))|
+                 (grepl("hit",EU_migration_deaths$`cause of death`[i]))){
+        EU_migration_deaths$`Nature of death`[i] <- "Accident"
+      }
+}
+#Data compiled
+```
+Calculate the total deaths:
+
+```{r}
+total.deaths <- sum(EU_migration_deaths$number[!is.na(EU_migration_deaths$number)])
+death_by_drown <- sum(EU_migration_deaths$number[EU_migration_deaths$`Nature of death`=="Drown"])
+death_by_drown_percentage <- death_by_drown/total.deaths*100
+```
+
+The total number of European migrant death during year 1993-2018 is `r total.deaths`, of which `r round(death_by_drown_percentage,2)` percentage are caused by drowning. Approximately, 3 out of 5 European migrant death is caused by drowning.
+
+
+
+
+#Analysis by year and country of incident
+
+
+```{r}
+#Get the data:
+library(plyr)
+year_vs_coun_of_incident <- ddply(EU_migration_deaths,.(year,`country of incident`),summarize,sum.number=sum(number))
+
+countryofincident <- tapply(year_vs_coun_of_incident$sum.number,year_vs_coun_of_incident$`country of incident` , sum)
+
+country.of.incident <- data.frame(country = names(countryofincident))
+
+for (i in 1:dim(country.of.incident)[1]) {country.of.incident$deathbycoun[i] <- countryofincident[i]
+}
+colnames(country.of.incident)[1] <- "country of incident"
+year_vs_coun_of_incident_sum <- merge(year_vs_coun_of_incident, country.of.incident, by= "country of incident", all.x = T )
+```
+
+
+Plot total death vs Year of incident
+```{r}
+#Use the data year_vs_coun_of_incident_sum
+
+#if the total death for a country is less than n set the country to 'other'
+n <- 400
+year_vs_coun_of_incident_sum_other <- year_vs_coun_of_incident_sum
+for (i in 1:dim(year_vs_coun_of_incident_sum_other)[1]) {
+  if (year_vs_coun_of_incident_sum_other$deathbycoun[i] < n){
+    year_vs_coun_of_incident_sum_other$`country of incident`[i] <- "other"
+  }
+}
+ggplot(data =  year_vs_coun_of_incident_sum_other, aes(y=sum.number, x=year ,fill =`country of incident` )) +
+  geom_col() + 
+  # coord_flip() +
+   labs(y = "Death total", x = "Year of incident", title = "Death by year of incident ") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), plot.title = element_text(hjust = 0.5))
+
+unknown_coun_of_incident <- sum(EU_migration_deaths$number[
+                                EU_migration_deaths$`country of incident` == "unknown"])
+
+print(paste("The country of incident for", unknown_coun_of_incident,
+            "deaths occured between 1993-2018 is unidentified."))
+
+#remove the data for unknown country of incident
+year_vs_coun_of_incident_sum_other <- year_vs_coun_of_incident_sum_other[(year_vs_coun_of_incident_sum_other$`country of incident` != "unknown"),]
+
+ggplot(data =  year_vs_coun_of_incident_sum_other, aes(y=sum.number, x=year ,fill =`country of incident` )) +
+  geom_col() +
+  # coord_flip() +
+   labs(y = "Death total", x = "Year of incident", title = "Death by year of incident \n (excluding 'unkown' country of incident)") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), plot.title = element_text(hjust = 0.5))
+
+```
+
+Plot total death vs country of incident
+
+```{r}
+#Use the data year_vs_coun_of_incident_sum
+#prepare the data for total death greater than n
+n<- 70
+
+year_vs_coun_of_incident_sum_gt_n <- year_vs_coun_of_incident_sum[year_vs_coun_of_incident_sum$deathbycoun > n,]
+
+#remove the data for unknown country of incident
+year_vs_coun_of_incident_sum_gt_n <- year_vs_coun_of_incident_sum_gt_n[(year_vs_coun_of_incident_sum_gt_n$`country of incident` != "unknown"),]
+
+for (i in 1:dim(year_vs_coun_of_incident_sum_gt_n)[1]) {
+  if (year_vs_coun_of_incident_sum_gt_n$year[i] %in% c(1993:1999)){
+    year_vs_coun_of_incident_sum_gt_n$year[i] <- "1993-1999"
+  } else if (year_vs_coun_of_incident_sum_gt_n$year[i] %in% c(2000:2006)){
+    year_vs_coun_of_incident_sum_gt_n$year[i] <- "2000-2006"
+  } else if (year_vs_coun_of_incident_sum_gt_n$year[i] %in% c(2007:2012)){
+    year_vs_coun_of_incident_sum_gt_n$year[i] <- "2007-2012"
+  } else if (year_vs_coun_of_incident_sum_gt_n$year[i] %in% c(2013:2018)){
+    year_vs_coun_of_incident_sum_gt_n$year[i] <- "2013-2018"
+  }
+}
+
+ggplot(data =  year_vs_coun_of_incident_sum_gt_n, aes(y=sum.number, x=reorder(`country of incident`,desc(deathbycoun)) ,fill =year )) +
+  geom_col() + 
+  # coord_flip() +
+   labs(y = "Death total", x = "Country of incident", title = "Death by country of incident \n(Top 20 excluding 'unkown')") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),plot.title = element_text(hjust = 0.5))
+```
+
+#Analysis by region of origin and year
+```{r}
+library(plyr)
+year_vs_region_of_origin <- ddply(EU_migration_deaths,.(year,`region of origin` ),summarize,sum.number=sum(number))
+
+regionoforigin <- tapply(year_vs_region_of_origin$sum.number,year_vs_region_of_origin$`region of origin` , sum)
+
+region.of.origin <- data.frame(country = names(regionoforigin))
+
+for (i in 1:dim(region.of.origin)[1]) {region.of.origin$deathbycoun[i] <- regionoforigin[i]
+}
+colnames(region.of.origin)[1] <- "region of origin"
+year_vs_region_of_origin_sum <- merge(year_vs_region_of_origin, region.of.origin, by= "region of origin", all.x = T )
+
+#Get the data for total death greater than n
+n <- 110
+year_vs_region_of_origin_sum_gt_n <- year_vs_region_of_origin_sum[year_vs_region_of_origin_sum$deathbycoun > n , ]
+
+year_vs_region_of_origin_sum_gt_n <- year_vs_region_of_origin_sum_gt_n[year_vs_region_of_origin_sum_gt_n$`region of origin` != "unknown",]
+
+for (i in 1:dim(year_vs_region_of_origin_sum_gt_n)[1]) {
+  if (year_vs_region_of_origin_sum_gt_n$year[i] %in% c(1993:1999)){
+    year_vs_region_of_origin_sum_gt_n$year[i] <- "1993-1999"
+  } else if (year_vs_region_of_origin_sum_gt_n$year[i] %in% c(2000:2006)){
+    year_vs_region_of_origin_sum_gt_n$year[i] <- "2000-2006"
+  } else if (year_vs_region_of_origin_sum_gt_n$year[i] %in% c(2007:2012)){
+    year_vs_region_of_origin_sum_gt_n$year[i] <- "2007-2012"
+  } else if (year_vs_region_of_origin_sum_gt_n$year[i] %in% c(2013:2018)){
+    year_vs_region_of_origin_sum_gt_n$year[i] <- "2013-2018"
+  }
+}
+
+ggplot(data =  year_vs_region_of_origin_sum_gt_n, aes(y=sum.number, x=reorder(`region of origin`, desc(deathbycoun)) ,fill =year )) +
+  geom_col() + 
+  # coord_flip() +
+   labs(y = "Death total", x = "Region of origin", title = "Death by region of origin \n (Top 20 excluding 'unkown')") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), plot.title = element_text(hjust = 0.5))
+
+```
+
+#Analysis by cause of death and year
+
+```{r}
+library(plyr)
+year_vs_nature_of_death <- ddply(EU_migration_deaths,.(year,`Nature of death` ),summarize,sum.number=sum(number))
+
+natureofdeath <- tapply(year_vs_nature_of_death$sum.number,year_vs_nature_of_death$`Nature of death` , sum)
+
+nature.of.death <- data.frame(country = names(natureofdeath))
+
+for (i in 1:dim(nature.of.death)[1]) {nature.of.death$deathbynature[i] <- natureofdeath[i]
+}
+colnames(nature.of.death)[1] <- "Nature of death"
+year_vs_nature_of_death_sum <- merge(year_vs_nature_of_death, nature.of.death, by= "Nature of death", all.x = T )
+
+for (i in 1:dim(year_vs_nature_of_death_sum)[1]) {
+  if (year_vs_nature_of_death_sum$year[i] %in% c(1993:1999)){
+    year_vs_nature_of_death_sum$year[i] <- "1993-1999"
+  } else if (year_vs_nature_of_death_sum$year[i] %in% c(2000:2006)){
+    year_vs_nature_of_death_sum$year[i] <- "2000-2006"
+  } else if (year_vs_nature_of_death_sum$year[i] %in% c(2007:2012)){
+    year_vs_nature_of_death_sum$year[i] <- "2007-2012"
+  } else if (year_vs_nature_of_death_sum$year[i] %in% c(2013:2018)){
+    year_vs_nature_of_death_sum$year[i] <- "2013-2018"
+  }
+}
+
+prop_drown <- sum(year_vs_nature_of_death$sum.number[year_vs_nature_of_death$`Nature of death` =='Drown'])/sum(year_vs_nature_of_death$sum.number)
+
+prop_missing <- sum(year_vs_nature_of_death$sum.number[year_vs_nature_of_death$`Nature of death` =='Missing'])/sum(year_vs_nature_of_death$sum.number)
+
+prop_found_dead <- sum(year_vs_nature_of_death$sum.number[year_vs_nature_of_death$`Nature of death` =='Found dead'])/sum(year_vs_nature_of_death$sum.number)
+
+prop_other <- sum(year_vs_nature_of_death$sum.number[year_vs_nature_of_death$`Nature of death` =='other'])/sum(year_vs_nature_of_death$sum.number)
+
+ggplot(data =  year_vs_nature_of_death_sum, aes(y=sum.number, x=reorder(`Nature of death`, desc(deathbynature)) ,fill =year )) +
+  geom_col() + 
+  # coord_flip() +
+   labs(y = "Death total", x = "Nature/cause of death", title = "Nature/cause of death for EU migrants") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), plot.title = element_text(hjust = 0.5))
+
+
+
+```
+
+The proportions of death caused by "Drowning" ,"Missing", "Found dead" and  "other" are: `r round(prop_drown,4)`, `r round(prop_missing,4)`, `r round(prop_found_dead,4)` and  `r round(prop_other,4)`  respectively. 
+
+```{r}
+#Death by nature of death excluding drowning, found dead, missing and other:
+
+year_vs_nature_of_death_sum_trimmed <- year_vs_nature_of_death_sum[
+                              (year_vs_nature_of_death_sum$`Nature of death` != "Drown") &
+                              (year_vs_nature_of_death_sum$`Nature of death` != "Missing") &
+                              (year_vs_nature_of_death_sum$`Nature of death` != "Found dead") &
+                              (year_vs_nature_of_death_sum$`Nature of death` != "other"),]
+
+ggplot(data =  year_vs_nature_of_death_sum_trimmed, aes(y=sum.number, x=reorder(`Nature of death`, desc(deathbynature)) ,fill =year )) +
+  geom_col() + 
+  # coord_flip() +
+   labs(y = "Death total", x = "Nature/cause of death", title = "Nature/cause of death for EU migrants \n (excluding drowning, found dead, missing and other)") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), plot.title = element_text(hjust = 0.5))
+
+
+```
+
+There is a recent surge in death count in last five years for the deaths caused by suffocation, accident, shooting and murder.
+
+Analysis for the path of migration for the deaths caused by drowning or presumed drowning:
+
+```{r}
+#get the data for nature of death = Drown
+
+data_drown <- EU_migration_deaths[((EU_migration_deaths$`Nature of death`=="Drown") |
+                                     (EU_migration_deaths$`Nature of death`=="Presumed drowned")),]
+
+library(plyr)
+data_drown_by_pathandyear <- ddply(data_drown,.(year,Path), summarize, sum.number=sum(number))
+
+bypath <- tapply(data_drown_by_pathandyear$sum.number,data_drown_by_pathandyear$Path , sum)
+
+by.path <- data.frame(Path = names(bypath))
+
+for (i in 1:dim(by.path)[1]) {by.path$deathbypath[i] <- bypath[i]
+}
+
+data_drown_by_pathandyear_sum <- merge(data_drown_by_pathandyear, by.path, by= "Path", all.x = T )
+
+for (i in 1:dim(data_drown_by_pathandyear_sum)[1]) {
+  if (data_drown_by_pathandyear_sum$year[i] %in% c(1993:1999)){
+    data_drown_by_pathandyear_sum$year[i] <- "1993-1999"
+  } else if (data_drown_by_pathandyear_sum$year[i] %in% c(2000:2006)){
+    data_drown_by_pathandyear_sum$year[i] <- "2000-2006"
+  } else if (data_drown_by_pathandyear_sum$year[i] %in% c(2007:2012)){
+    data_drown_by_pathandyear_sum$year[i] <- "2007-2012"
+  } else if (data_drown_by_pathandyear_sum$year[i] %in% c(2013:2018)){
+    data_drown_by_pathandyear_sum$year[i] <- "2013-2018"
+  }
+}
+
+
+#prepare the data for total death by path greater than n
+n<- 100
+
+data_drown_by_pathandyear_sum_gtn <- data_drown_by_pathandyear_sum[data_drown_by_pathandyear_sum$deathbypath > n,]
+
+
+
+ggplot(data =  data_drown_by_pathandyear_sum_gtn, aes(y=sum.number, x=reorder(Path, desc(deathbypath)) ,fill =year )) +
+  geom_col() + 
+  # coord_flip() +
+   labs(y = "Death total", x = "Path of migrant", title = "Path of the EU migrants who died by drowning \n (Paths for which total death > 100 are shown)") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), plot.title = element_text(hjust = 0.5))
+
+print("There is a huge number of death caused by drowning for which the 'region of origin' and/or 'country of incident' are unknown.")
+
+#Exclude unknown paths:
+data_drown_by_pathandyear_sum_ex <- data_drown_by_pathandyear_sum[
+                          grepl("unknown",data_drown_by_pathandyear_sum$Path)== F,]
+#plot for deathby path > n
+n<- 95
+
+data_drown_by_pathandyear_sum_ex <- data_drown_by_pathandyear_sum_ex[data_drown_by_pathandyear_sum_ex$deathbypath > n,]
+
+
+
+ggplot(data =  data_drown_by_pathandyear_sum_ex, aes(y=sum.number, x=reorder(Path, desc(deathbypath)) ,fill =year )) +
+  geom_col() + 
+  # coord_flip() +
+   labs(y = "Death total", x = "Path of migrant", title = "Path of the EU migrants who died by drowning \n (Excluding the unknown region of origin and/or incident) \n (Top 20 are shown)") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), plot.title = element_text(hjust = 0.5))
+
+
+```
+
+
+
+
