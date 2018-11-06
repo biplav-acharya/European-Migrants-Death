@@ -258,7 +258,7 @@ Plot total death vs country of incident
 
 ```{r}
 #Use the data year_vs_coun_of_incident_sum
-#prepare the data for total death greater than n
+#prepare the data for total death greater than n 
 n<- 70
 
 year_vs_coun_of_incident_sum_gt_n <- year_vs_coun_of_incident_sum[year_vs_coun_of_incident_sum$deathbycoun > n,]
